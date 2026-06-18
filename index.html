@@ -1,0 +1,377 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Species Ascendancy Simulator</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --panel:#121a30;
+      --panel2:#18233d;
+      --text:#e9eefc;
+      --muted:#9dafd1;
+      --line:#243255;
+      --good:#6be38a;
+      --bad:#ff6b8a;
+      --warn:#ffd56b;
+      --accent:#7ba7ff;
+      --shadow: 0 18px 50px rgba(0,0,0,.32);
+      --radius: 18px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(123,167,255,.15), transparent 28%),
+        radial-gradient(circle at top right, rgba(107,227,138,.12), transparent 26%),
+        linear-gradient(180deg, #08101f, #0b1020 38%, #080c18);
+      color:var(--text);
+      min-height:100vh;
+    }
+    .wrap{max-width:1480px;margin:0 auto;padding:18px}
+    .topbar{
+      display:grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap:16px;
+      align-items:stretch;
+      margin-bottom:16px;
+    }
+    .hero,.side,.card,.feed,.sector{
+      background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+      border:1px solid rgba(255,255,255,.08);
+      box-shadow:var(--shadow);
+      border-radius:var(--radius);
+      backdrop-filter: blur(10px);
+    }
+    .hero{padding:18px 20px}
+    .hero h1{margin:0 0 8px;font-size:28px;letter-spacing:.3px}
+    .hero p{margin:6px 0;color:var(--muted);line-height:1.5}
+    .pill-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+    .pill{
+      border:1px solid rgba(255,255,255,.09);
+      background:rgba(255,255,255,.03);
+      padding:8px 12px;border-radius:999px;
+      color:var(--text);font-size:13px
+    }
+    .side{padding:16px}
+    .controls{display:flex;gap:10px;flex-wrap:wrap}
+    button,input{
+      border:none;border-radius:14px;
+      padding:10px 14px;
+      background:var(--panel2);
+      color:var(--text);
+      outline:none;
+    }
+    button{cursor:pointer;font-weight:700}
+    button.primary{background:linear-gradient(135deg, #6c8fff, #8d71ff)}
+    button.good{background:linear-gradient(135deg, #42c67a, #3ca0ff)}
+    button.warn{background:linear-gradient(135deg, #d6a23f, #ff7f50)}
+    button.ghost{background:rgba(255,255,255,.05)}
+    input{width:100%}
+    .small{font-size:12px;color:var(--muted)}
+    .layout{
+      display:grid;
+      grid-template-columns: 1.35fr .95fr;
+      gap:16px;
+    }
+    .species-grid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap:14px;
+    }
+    .card{padding:16px}
+    .card h3{margin:0 0 4px;font-size:20px}
+    .sub{color:var(--muted);font-size:13px;margin-bottom:10px}
+    .statgrid{
+      display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px
+    }
+    .stat{
+      background:rgba(255,255,255,.03);
+      border:1px solid rgba(255,255,255,.07);
+      border-radius:14px;
+      padding:9px 10px;
+      font-size:13px;
+    }
+    .bar{
+      height:10px;background:rgba(255,255,255,.06);
+      border-radius:999px;overflow:hidden;margin-top:8px
+    }
+    .fill{height:100%;background:linear-gradient(90deg, var(--accent), #72f0b6);width:40%}
+    .feed{padding:16px;display:flex;flex-direction:column;min-height:100%}
+    .feed h2,.panel-title{margin:0 0 10px;font-size:20px}
+    .log{
+      border-bottom:1px solid rgba(255,255,255,.07);
+      padding:10px 0;
+    }
+    .log:last-child{border-bottom:none}
+    .log .meta{font-size:12px;color:var(--muted);margin-bottom:4px}
+    .log .headline{font-weight:800;margin-bottom:3px}
+    .log .narrative{color:#dbe4ff;line-height:1.45}
+    .world-grid{
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0,1fr));
+      gap:12px;
+      margin-top:16px;
+    }
+    .mini{
+      padding:14px;
+      background:rgba(255,255,255,.03);
+      border:1px solid rgba(255,255,255,.07);
+      border-radius:16px;
+    }
+    .mini .label{color:var(--muted);font-size:12px}
+    .mini .value{font-size:20px;font-weight:800;margin-top:6px}
+    .footer{color:var(--muted);font-size:12px;margin:14px 2px 0}
+    .tag{
+      display:inline-block;
+      margin-left:8px;
+      padding:2px 8px;border-radius:999px;
+      background:rgba(107,227,138,.12);
+      color:var(--good);font-size:12px
+    }
+    .danger{color:var(--bad)}
+    .muted{color:var(--muted)}
+    .rows{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .matrix{
+      margin-top:12px;
+      display:grid;grid-template-columns:repeat(5,1fr);
+      gap:6px;
+    }
+    .matrix div{
+      padding:8px;
+      text-align:center;
+      border-radius:12px;
+      font-size:12px;
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.06);
+    }
+    .selected{outline:2px solid rgba(123,167,255,.55)}
+    .webhook-row{display:grid;grid-template-columns: 1fr auto; gap:10px; margin-top:10px}
+    @media (max-width: 1100px){
+      .topbar,.layout,.species-grid,.rows,.world-grid{grid-template-columns:1fr}
+      .matrix{grid-template-columns:repeat(2,1fr)}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="hero">
+        <h1>Species Ascendancy Simulator <span class="tag">free / live / automatic</span></h1>
+        <p>
+          Huge-world civilization war simulation. Five species evolve from scratch, expand across a 20×20 continent, and post every major event to the website and Discord webhook.
+        </p>
+        <p class="small" id="speedLine">Loading...</p>
+        <div class="pill-row">
+          <div class="pill" id="timePill">Time: --</div>
+          <div class="pill" id="leaderPill">Leader: --</div>
+          <div class="pill" id="alivePill">Alive: --</div>
+          <div class="pill" id="statePill">State: --</div>
+        </div>
+      </div>
+
+      <div class="side">
+        <div class="controls">
+          <button class="good" id="toggleBtn">Pause</button>
+          <button class="primary" id="resetBtn">Reset</button>
+          <button class="ghost" id="stepBtn">Force step</button>
+        </div>
+        <div style="margin-top:12px">
+          <div class="small">Discord webhook URL</div>
+          <div class="webhook-row">
+            <input id="webhookInput" type="password" placeholder="Paste your Discord webhook URL here" />
+            <button id="saveWebhookBtn">Save</button>
+          </div>
+          <div class="small" style="margin-top:8px">
+            Stored in browser local storage and sent to the server for posting major events.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="world-grid">
+      <div class="mini"><div class="label">Continent size</div><div class="value">Huge</div></div>
+      <div class="mini"><div class="label">Species</div><div class="value" id="speciesCount">5</div></div>
+      <div class="mini"><div class="label">Sectors</div><div class="value" id="sectorCount">400</div></div>
+      <div class="mini"><div class="label">Simulation rate</div><div class="value">10h 9m / sec</div></div>
+    </div>
+
+    <div class="layout" style="margin-top:16px">
+      <div>
+        <h2 class="panel-title">Species</h2>
+        <div class="species-grid" id="speciesGrid"></div>
+      </div>
+
+      <div class="feed">
+        <h2 class="panel-title">Live event feed</h2>
+        <div id="logList"></div>
+      </div>
+    </div>
+
+    <div class="footer">
+      Tip: paste the webhook URL once, click Save, and keep the page open. The sim runs automatically and every major event is mirrored to Discord.
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      running: true,
+      species: [],
+      logs: [],
+      selectedId: null
+    };
+
+    const el = (id) => document.getElementById(id);
+
+    function fmtNum(n) {
+      return new Intl.NumberFormat().format(Math.max(0, Math.round(n)));
+    }
+
+    function stageName(level) {
+      return ['spark', 'tribe', 'chiefdom', 'kingdom', 'empire', 'ascendant'][level] || 'unknown';
+    }
+
+    function renderSpecies() {
+      const grid = el('speciesGrid');
+      grid.innerHTML = '';
+      state.species.forEach(sp => {
+        const wrap = document.createElement('div');
+        wrap.className = 'card' + (state.selectedId === sp.id ? ' selected' : '');
+        const treaty = sp.treatyWith ? `• treaty with ${sp.treatyWith}` : '';
+        const adaptationText = Object.entries(sp.adaptations || {})
+          .map(([k,v]) => `${k}:${v.toFixed(2)}`)
+          .join(' · ');
+        wrap.innerHTML = `
+          <h3 style="color:${sp.color}">${sp.name}</h3>
+          <div class="sub">${sp.alias} • ${sp.motto}</div>
+          <div class="small">Stage: <b>${sp.stage}</b> (${stageName(sp.stageLevel)}) • Strategy: <b>${sp.strategy}</b> ${treaty}</div>
+          <div class="statgrid">
+            <div class="stat">Population<br><b>${fmtNum(sp.pop)}</b></div>
+            <div class="stat">Territory<br><b>${fmtNum(sp.territory)}</b></div>
+            <div class="stat">Resources<br><b>${fmtNum(sp.resources)}</b></div>
+            <div class="stat">Morale<br><b>${sp.morale.toFixed(2)}</b></div>
+            <div class="stat">Tech<br><b>${sp.tech.toFixed(2)}</b></div>
+            <div class="stat">Power<br><b>${fmtNum(sp.power || 0)}</b></div>
+            <div class="stat">Kills<br><b>${fmtNum(sp.kills)}</b></div>
+            <div class="stat">Losses<br><b>${fmtNum(sp.losses)}</b></div>
+          </div>
+          <div class="bar"><div class="fill" style="width:${Math.min(100, Math.max(4, (sp.pop / 25000) * 100))}%"></div></div>
+          <div class="small" style="margin-top:10px">${adaptationText || 'No adaptation data yet.'}</div>
+        `;
+        wrap.addEventListener('click', () => {
+          state.selectedId = sp.id;
+          renderSpecies();
+        });
+        grid.appendChild(wrap);
+      });
+    }
+
+    function renderLogs() {
+      const list = el('logList');
+      list.innerHTML = '';
+      const logs = state.logs.slice(0, 30);
+      if (!logs.length) {
+        list.innerHTML = '<div class="small">No events yet.</div>';
+        return;
+      }
+      logs.forEach(log => {
+        const div = document.createElement('div');
+        div.className = 'log';
+        div.innerHTML = `
+          <div class="meta">Y${log.time.years} • D${log.time.days} • ${String(log.time.hours).padStart(2,'0')}:${String(log.time.minutes).padStart(2,'0')} • ${log.kind}</div>
+          <div class="headline">${log.headline || 'Event'}</div>
+          <div class="narrative">${log.style === 'simple' ? (log.simple || log.narrative) : (log.narrative || log.simple)}</div>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function renderTop() {
+      el('timePill').textContent = 'Time: ' + (state.simLabel || '--');
+      el('leaderPill').textContent = 'Leader: ' + (state.leader?.name || 'None');
+      el('alivePill').textContent = 'Alive: ' + (state.meta?.aliveCount ?? '--');
+      el('statePill').textContent = 'State: ' + (state.running ? 'Running' : 'Paused');
+      el('speedLine').textContent = state.speed || '';
+      el('toggleBtn').textContent = state.running ? 'Pause' : 'Resume';
+      el('sectorCount').textContent = fmtNum(state.meta?.sectorCount || 0);
+      el('speciesCount').textContent = fmtNum(state.species?.length || 0);
+    }
+
+    function applyState(s) {
+      state.running = s.running;
+      state.species = (s.species || []).map(sp => ({
+        ...sp,
+        power: calcPower(sp)
+      }));
+      state.logs = s.logs || [];
+      state.simLabel = s.simLabel;
+      state.speed = s.speed;
+      state.leader = s.leader;
+      state.meta = s.meta;
+      renderTop();
+      renderSpecies();
+      renderLogs();
+    }
+
+    function calcPower(sp){
+      const base = Math.pow(Math.max(1, sp.pop || 1), 0.78);
+      return base * (1 + (sp.resilience||0)*0.25 + (sp.tech||0)*0.45 + (sp.siege||0)*0.25 + (sp.morale||1)*0.15) * (1 + Math.sqrt(Math.max(0, sp.territory||0))*0.12) * (0.75 + (sp.aggression||0)*0.45);
+    }
+
+    async function postAction(action){
+      await fetch('/api/control', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ action })
+      });
+      await refreshState();
+    }
+
+    async function refreshState(){
+      const res = await fetch('/api/state');
+      const data = await res.json();
+      applyState(data);
+    }
+
+    const savedWebhook = localStorage.getItem('species_sim_webhook') || '';
+    el('webhookInput').value = savedWebhook;
+
+    el('toggleBtn').addEventListener('click', () => postAction('toggle'));
+    el('resetBtn').addEventListener('click', () => postAction('reset'));
+    el('stepBtn').addEventListener('click', async () => {
+      await fetch('/api/step', { method:'POST' });
+      await refreshState();
+    });
+
+    el('saveWebhookBtn').addEventListener('click', async () => {
+      const webhookUrl = el('webhookInput').value.trim();
+      localStorage.setItem('species_sim_webhook', webhookUrl);
+      await fetch('/api/config', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ webhookUrl })
+      });
+      alert(webhookUrl ? 'Webhook saved.' : 'Webhook cleared.');
+    });
+
+    refreshState();
+
+    const es = new EventSource('/events');
+    es.onmessage = (msg) => {
+      try{
+        const data = JSON.parse(msg.data);
+        if (data.type === 'state') applyState(data.state);
+        if (data.type === 'event') {
+          state.logs = [data.event, ...(state.logs || [])].slice(0, 80);
+          renderLogs();
+          renderTop();
+        }
+      }catch(e){}
+    };
+    es.onerror = () => {};
+  </script>
+</body>
+</html>
